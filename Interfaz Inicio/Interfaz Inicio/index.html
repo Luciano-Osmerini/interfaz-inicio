@@ -202,6 +202,10 @@
                         <button onclick="cerrarSesion()" style="background: #e74c3c; color: white; padding: 6px 12px; border: none; border-radius: 4px; cursor: pointer; margin-top: 8px; font-size: 12px;">Cerrar Sesión</button>
                     `;
 
+                    // ASESORES siempre habilitado tras login exitoso
+                    document.getElementById('btn-asesores').style.pointerEvents = 'auto';
+                    document.getElementById('btn-asesores').style.opacity = '1';
+
                     const canAccessEstructura = user.Rol === 'Administrador' || user.Rol === 'Estructura';
                     const canAccessProcesos = user.Rol === 'Administrador' || user.Rol === 'Procesos';
 
