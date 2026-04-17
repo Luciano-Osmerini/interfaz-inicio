@@ -1,0 +1,208 @@
+<!DOCTYPE HTML>
+<html>
+    <head>
+        <title>Atento</title>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
+        <link rel="stylesheet" href="assets/css/main.css" />
+    </head>
+    <body class="is-preload">
+
+        <!-- Header -->
+        <header id="header">
+            <h1><strong>ATENTO</strong></h1>
+            <p>En que podemos ayudarte ?<br />
+            <a href="https://luciano-osmerini.github.io/Proyecto/"></a></p>
+        </header>
+
+        <!-- Configuración de URL de API -->
+        <div id="api-url-container" style="max-width: 400px; margin-bottom: 8px; display:none;">
+            <input type="text" id="api-url" placeholder="URL de la API (ej: http://localhost:550)" style="width: 100%; padding: 6px; border-radius: 5px; border: 1px solid #ccc; font-size: 13px;" value="http://localhost:5000" />
+        </div>
+        <!-- Signup Form -->
+        <form id="signup-form" method="post">
+            <div style="display: flex; gap: 10px; align-items: center; max-width: 400px; margin-bottom: 10px;">
+                <input type="text" name="dni" id="dni" placeholder="Ingrese Su DNI o NT" style="flex:1; min-width:0;" autocomplete="off" />
+                <button type="submit" id="btn-enviar" style="padding: 8px 18px; background: #1abc9c; color: #fff; border: none; border-radius: 5px; font-weight: bold; cursor: pointer;">Enviar</button>
+            </div>
+            <a id="btn-asesores" href="https://luciano-osmerini.github.io/interfaz-asesores/">ASESORES</a>
+            <a id="btn-estructura" href="https://luciano-osmerini.github.io/interfaz-esctructura/" style="pointer-events: none; opacity: 0.5;">ESTRUCTURA</a>
+            <a id="btn-procesos" href="https://luciano-osmerini.github.io/Proyecto/" style="pointer-events: none; opacity: 0.5;">PROCESOS</a>
+        </form>
+        <div id="resultado"></div>
+
+        <!-- Footer -->
+        <footer id="footer">
+            <ul class="icons">
+                <li><a href="https://www.facebook.com/share/1AMnXuWURM/" target="_blank" class="icon brands fa-facebook"><span class="label">Facebook</span></a></li>
+                <li><a href="https://www.instagram.com/atentooficial?igsh=MXhlMDhyb3M2cXI5ZQ==" target="_blank" class="icon brands fa-instagram"><span class="label">Instagram</span></a></li>
+                <li><a href="https://www.linkedin.com/company/atento/posts/?feedView=all" target="_blank" class="icon brands fa-linkedin"><span class="label">Linkedin</span></a></li>
+                <li><a href="https://atento.com/es/trabaja-con-nosotros" target="_blank" class="icon fa-envelope"><span class="label">Email</span></a></li>
+            </ul>
+            <ul class="copyright">
+                <li>&copy; Designed By</li><li> <a href="https://luciano-osmerini.github.io/Proyecto/">Osmerini Luciano</a></li>
+            </ul>
+        </footer>
+
+        <!-- Scripts -->
+        <script src="assets/js/main.js"></script>
+        <script>
+        // Mostrar el campo de URL de la API con Ctrl+U
+        document.addEventListener('keydown', function(e) {
+            if (e.ctrlKey && (e.key === 'u' || e.key === 'U')) {
+                e.preventDefault();
+                const cont = document.getElementById('api-url-container');
+                cont.style.display = cont.style.display === 'none' ? 'block' : 'none';
+                if (cont.style.display === 'block') {
+                    document.getElementById('api-url').focus();
+                }
+            }
+        });
+            // Al cargar la página, deshabilita todos los botones
+            // La opción ASESORES siempre disponible
+            document.getElementById('btn-estructura').style.pointerEvents = 'none';
+            document.getElementById('btn-estructura').style.opacity = '0.5';
+            document.getElementById('btn-procesos').style.pointerEvents = 'none';
+            document.getElementById('btn-procesos').style.opacity = '0.5';
+
+            let caducidadTimeout = null;
+
+            document.getElementById('signup-form').addEventListener('submit', async function(e) {
+                e.preventDefault();
+                const dni = document.getElementById('dni').value.trim();
+                const resultadoDiv = document.getElementById('resultado');
+                if (!dni) {
+                    resultadoDiv.innerHTML = '<span style="color:red;">Por favor, ingrese su DNI o NT.</span>';
+                    return;
+                }
+                try {
+                    const apiUrl = document.getElementById('api-url').value.trim().replace(/\/$/, '');
+                    const response = await fetch(`${apiUrl}/usuario/${dni}`);
+                    if (!response.ok) {
+                        resultadoDiv.innerHTML = `<span style=\"color:red;\">Usuario no encontrado o error en la API</span>`;
+                        return;
+                    }
+                    const data = await response.json();
+                    if (data.error) {
+                        resultadoDiv.innerHTML = `<span style=\"color:red;\">${data.error}</span>`;
+                    } else {
+                        resultadoDiv.innerHTML = `
+                            <strong>Bienvenido:</strong> ${data.Nombre} ${data.Apellido}<br>
+                            <strong>Rol:</strong> ${data.Rol}<br>
+                            <strong>DNI:</strong> ${data.DNI}
+                        `;
+                        // Habilita solo los botones según el rol
+                        // La opción ASESORES siempre disponible
+                        if (data.Rol === 'Administrador') {
+                            document.getElementById('btn-estructura').style.pointerEvents = 'auto';
+                            document.getElementById('btn-estructura').style.opacity = '1';
+                            document.getElementById('btn-procesos').style.pointerEvents = 'auto';
+                            document.getElementById('btn-procesos').style.opacity = '1';
+                        } else {
+                            document.getElementById('btn-estructura').style.pointerEvents = 'none';
+                            document.getElementById('btn-estructura').style.opacity = '0.5';
+                            document.getElementById('btn-procesos').style.pointerEvents = 'none';
+                            document.getElementById('btn-procesos').style.opacity = '0.5';
+                        }
+
+                        // Inicia el temporizador de caducidad (3 minutos = 180000 ms)
+                        if (caducidadTimeout) clearTimeout(caducidadTimeout);
+                        caducidadTimeout = setTimeout(() => {
+                            resultadoDiv.innerHTML = `<span style=\"color:red;\">La sesión ha caducado. Por favor, ingrese nuevamente su DNI.</span>`;
+                            document.getElementById('btn-asesores').style.pointerEvents = 'none';
+                            document.getElementById('btn-asesores').style.opacity = '0.5';
+                            document.getElementById('btn-estructura').style.pointerEvents = 'none';
+                            document.getElementById('btn-estructura').style.opacity = '0.5';
+                            document.getElementById('btn-procesos').style.pointerEvents = 'none';
+                            document.getElementById('btn-procesos').style.opacity = '0.5';
+                        }, 180000);
+                    }
+                } catch (err) {
+                    resultadoDiv.innerHTML = `<span style=\"color:red;\">Error al conectar con la API</span>`;
+                }
+            });
+        </script>
+
+        <div id="chatbot-container" style="position:fixed; bottom:40px; right:40px; z-index:999; max-width:320px; width:100%;">
+            <div id="chatbot" style="background:#222;border-radius:10px;padding:10px;color:#fff;box-shadow:0 0 10px #000; width:100%; max-width:260px; font-size:14px; margin: 0;">
+                <div style="text-align:center; font-weight:bold; font-size:16px; margin-bottom:8px; color:#1abc9c;">Asistente Virtual</div>
+                <div style="text-align:center; font-size:12px; margin-bottom:8px; color:#fff;">¡Hola! Soy tu asistente virtual. Escribe tu consulta y te guiaré.</div>
+                <div id="chat-messages" style="height:120px;overflow-y:auto;margin-bottom:8px;font-size:13px;"></div>
+                <input type="text" id="chat-input" placeholder="Escribe tu consulta..." style="width:68%;padding:4px;border-radius:5px;border:none;font-size:13px;">
+                <button id="chat-send" style="width:28%;padding:4px;border-radius:5px;border:none;background:#1abc9c;color:#fff;font-weight:bold;font-size:13px;">Enviar</button>
+            </div>
+        <style>
+        @media (max-width: 600px) {
+            #chatbot-container {
+                width: 98vw !important;
+                right: 1vw !important;
+                bottom: 10px !important;
+                left: auto !important;
+                margin: 0 !important;
+                min-width: 0 !important;
+            }
+            #chatbot {
+                max-width: 98vw !important;
+                min-width: 0 !important;
+                font-size: 12px !important;
+            }
+            #chat-messages {
+                height: 80px !important;
+                font-size: 11px !important;
+            }
+            #chat-input, #chat-send {
+                font-size: 11px !important;
+                padding: 3px !important;
+            }
+        }
+        </style>
+        </div>
+
+        <script>
+        const respuestas = {
+            "recibo": "Para descargar tu recibo, ve a la solapa 'ASESORES' y luego selecciona 'Descargar Mi Recibo'.",
+            "recibo sueldo": "Para descargar tu recibo, ve a la solapa 'ASESORES' y luego selecciona 'Descargar Mi Recibo'.",
+            "vacaciones": "Para consultar tus vacaciones, ve a la solapa 'ASESORES' y luego selecciona 'Ver Mis Vacaciones'.",
+            "ver mis vacaciones": "Para consultar tus vacaciones, ve a la solapa 'ASESORES' y luego selecciona 'Ver Mis Vacaciones'.",
+            "reiniciar pc": "Para reiniciar tu PC, ve a la solapa 'ESTRUCTURA' y luego selecciona 'Reiniciar PC'.",
+            "reinicio": "Para reiniciar tu PC, ve a la solapa 'ESTRUCTURA' y luego selecciona 'Reiniciar PC'.",
+            "extension avaya": "Si tienes problemas con tu extensión en Avaya, ve a la solapa 'ESTRUCTURA' y luego selecciona 'Error Avaya o Cti bar'.",
+            "avaya": "Si tienes problemas con tu extensión en Avaya, ve a la solapa 'ESTRUCTURA' y luego selecciona 'Error Avaya o Cti bar'.",
+            "mfa": "Para configurar MFA, ve a la solapa 'ASESORES' y luego selecciona 'Configurar MFA'.",
+            "configurar mfa": "Para configurar MFA, ve a la solapa 'ASESORES' y luego selecciona 'Configurar MFA'.",
+            "pc libres": "Para consultar las PC libres, ve a la solapa 'ASESORES' y luego selecciona 'PC Libres'.",
+            "rrhh": "Para contactar a Recursos Humanos, ve a la solapa 'ASESORES' y luego selecciona 'RRHH presencial'.",
+            "recursos humanos": "Para contactar a Recursos Humanos, ve a la solapa 'ASESORES' y luego selecciona 'RRHH presencial'.",
+            "soporte": "Para soporte llama al 0800-222-8368.",
+            "clima": "Pronto estará disponible la encuesta de clima laboral."
+        };
+
+        function responderChat(mensaje) {
+            mensaje = mensaje.toLowerCase();
+            for (const clave in respuestas) {
+                if (mensaje.includes(clave)) {
+                    return respuestas[clave];
+                }
+            }
+            return "No entiendo tu consulta. ¿Podés reformularla o elegir una opción del menú?";
+        }
+
+        document.getElementById('chat-send').onclick = function() {
+            const input = document.getElementById('chat-input');
+            const mensaje = input.value.trim();
+            if (!mensaje) return;
+            const chat = document.getElementById('chat-messages');
+            chat.innerHTML += `<div style="text-align:right;"><b>Tú:</b> ${mensaje}</div>`;
+            const respuesta = responderChat(mensaje);
+            chat.innerHTML += `<div style="text-align:left;"><b>Bot:</b> ${respuesta}</div>`;
+            chat.scrollTop = chat.scrollHeight;
+            input.value = "";
+        };
+
+        document.getElementById('chat-input').addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') document.getElementById('chat-send').click();
+        });
+        </script>
+
+    </body>
+</html>
