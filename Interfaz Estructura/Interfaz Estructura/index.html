@@ -1,0 +1,432 @@
+<!DOCTYPE HTML>
+
+<html>
+	<head>
+		<title>Atento - Estructura</title>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
+		<link rel="stylesheet" href="assets/css/main.css" />
+		<style>
+#btn-enviar {
+    font-size: 1.2em;
+    padding: 0.8em 2em;
+    min-width: 120px;
+    margin-left: 10px;
+    text-align: center;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.host-row {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    flex-wrap: wrap;
+}
+.tool-row {
+    display: flex;
+    gap: 10px;
+    margin-top: 10px;
+    flex-wrap: wrap;
+}
+#btn-ping,
+#btn-tracert {
+    min-width: 140px;
+}
+#signup-form {
+    display: block !important;
+    width: min(100%, 980px);
+}
+#signup-form > * {
+    margin-left: 0 !important;
+}
+#tool-output {
+    margin-top: 10px;
+    background: rgba(0, 0, 0, 0.5);
+    color: #d9f8ff;
+    padding: 10px;
+    border-radius: 6px;
+    min-height: 120px;
+    max-height: 260px;
+    overflow: auto;
+    white-space: pre-wrap;
+}
+.actions-grid {
+    margin-top: 16px;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 12px;
+}
+.button.primary.large {
+    font-size: 1.4em;
+    padding: 1em 2em;
+    min-width: 220px;
+    width: 100%;
+    min-height: 64px;
+    text-align: center;
+    white-space: normal;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 0;
+    line-height: 1.2;
+}
+
+@media screen and (max-width: 736px) {
+    #btn-enviar {
+        width: 100%;
+        margin-left: 0;
+    }
+    #signup-form input[type="text"] {
+        width: 100%;
+    }
+    #btn-ping,
+    #btn-tracert {
+        width: calc(50% - 5px);
+        min-width: 0;
+    }
+}
+		</style>
+	</head>
+	<body class="is-preload">
+
+		<!-- Header -->
+			<header id="header">
+				<h1>Agiliza Tus Tiempos</h1>
+				<button onclick="cerrarSesion()" style="position: absolute; top: 20px; right: 20px; background: #e74c3c; color: white; padding: 8px 16px; border: none; border-radius: 4px; cursor: pointer; font-size: 14px;">Cerrar Sesión</button>
+				<p>Si tenes dudas ➡️ <a href="https://teams.microsoft.com/v2/" target="_blank"> Contactanos en Teams</a></p>
+			</header>
+
+		<!-- Signup Form -->
+			<form id="signup-form" method="post" action="#">
+                <input type="hidden" id="api-url" value="http://127.0.0.1:5000" />
+                <input type="hidden" id="dni" value="" />
+                <div class="host-row">
+				    <input type="text" id="ip-hostname" placeholder="Ingresa IP o Hostname" />
+				    <button type="button" id="btn-enviar">Enviar</button>
+                </div>
+                <div class="tool-row">
+                    <button type="button" id="btn-ping" class="button" disabled>Ping</button>
+                    <button type="button" id="btn-tracert" class="button" disabled>Tracert</button>
+                </div>
+                <pre id="tool-output">Resultados de diagnostico...</pre>
+
+                <div class="actions-grid">
+                    <button id="btn-avaya" class="button primary large" disabled>Error Avaya O Cti Bar</button>
+                    <button id="btn-perfiles" class="button primary large" disabled>Borrar Perfiles PC</button>
+                    <button id="btn-lentitud" class="button primary large" disabled>Lentitud PC</button>
+                    <button id="btn-mapa" class="button primary large" disabled>Mapa Web</button>
+                    <button id="btn-proxy" class="button primary large" disabled>Configurar Proxy</button>
+                    <button id="btn-dns" class="button primary large" disabled>Borrar DNS</button>
+                    <button id="btn-cache" class="button primary large" disabled>Borrar Cache de Navegador</button>
+                    <button id="btn-instructivo" class="button primary large" disabled>Instructivo VDI/Bluespace</button>
+                    <button id="btn-permisos" class="button primary large" disabled>Actualización de Permisos</button>
+                    <button id="btn-accesos" class="button primary large" disabled>Accesos Útiles</button>
+                    <button id="btn-simplex" class="button primary large" disabled>Simplex</button>
+                    <button id="btn-resolucion" class="button primary large" disabled>Resolución Pantalla</button>
+                    <button id="btn-logger" class="button primary large" disabled>Repara Logger</button>
+                    <button id="btn-reiniciar" class="button primary large" disabled>Reiniciar PC</button>
+                </div>
+			</form>
+
+		<!-- Footer -->
+			<footer id="footer">
+				<ul class="copyright">
+					<li>&copy;Designed By</li><li>Osmerini Luciano</li>
+				</ul>
+			</footer>
+
+		<!-- Scripts -->
+			<script src="assets/js/main.js"></script>
+			<script>
+document.getElementById('btn-enviar').onclick = habilitarBotones;
+document.getElementById('ip-hostname').addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') {
+        e.preventDefault();
+        habilitarBotones();
+    }
+});
+
+function habilitarBotones() {
+    const ip = document.getElementById('ip-hostname').value.trim();
+    const botones = [
+        'btn-ping', 'btn-tracert',
+        'btn-avaya', 'btn-perfiles', 'btn-lentitud',
+        'btn-mapa', 'btn-proxy', 'btn-dns', 'btn-cache',
+        'btn-instructivo', 'btn-permisos', 'btn-accesos',
+        'btn-simplex', 'btn-resolucion', 'btn-logger', 'btn-reiniciar'
+    ];
+    botones.forEach(id => {
+        document.getElementById(id).disabled = !ip;
+    });
+}
+
+function safeDniValue() {
+    const dniInput = document.getElementById('dni');
+    return dniInput ? dniInput.value.trim() : '';
+}
+
+function getApiUrl() {
+    return document.getElementById('api-url').value.trim().replace(/\/$/, '');
+}
+
+function setToolOutput(text) {
+    const out = document.getElementById('tool-output');
+    if (out) out.textContent = text;
+}
+
+async function ejecutarHerramienta(endpoint, payload) {
+    const apiUrl = getApiUrl();
+    const response = await fetch(`${apiUrl}${endpoint}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify(payload),
+    });
+
+    const data = await response.json();
+    if (!response.ok || data.error) {
+        throw new Error(data.error || 'No se pudo ejecutar la herramienta');
+    }
+    return data;
+}
+
+document.getElementById('btn-ping').addEventListener('click', async function() {
+    const target = document.getElementById('ip-hostname').value.trim();
+    if (!target) {
+        setToolOutput('Ingresa una IP o hostname antes de ejecutar ping.');
+        return;
+    }
+
+    setToolOutput(`Ejecutando ping a ${target}...`);
+    try {
+        const data = await ejecutarHerramienta('/tools/ping', { target, count: 4 });
+        setToolOutput(data.output || 'Sin salida de ping');
+        registrarGestion(safeDniValue(), `Ping a ${target}`);
+    } catch (err) {
+        setToolOutput(`Error: ${err.message}`);
+    }
+});
+
+document.getElementById('btn-tracert').addEventListener('click', async function() {
+    const target = document.getElementById('ip-hostname').value.trim();
+    if (!target) {
+        setToolOutput('Ingresa una IP o hostname antes de ejecutar tracert.');
+        return;
+    }
+
+    setToolOutput(`Ejecutando tracert a ${target}...`);
+    try {
+        const data = await ejecutarHerramienta('/tools/tracert', { target, max_hops: 15 });
+        setToolOutput(data.output || 'Sin salida de tracert');
+        registrarGestion(safeDniValue(), `Tracert a ${target}`);
+    } catch (err) {
+        setToolOutput(`Error: ${err.message}`);
+    }
+});
+
+async function registrarGestion(dni, accion) {
+    try {
+        const apiUrl = getApiUrl();
+        await fetch(`${apiUrl}/log_gestion`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
+            body: JSON.stringify({ dni, accion })
+        });
+    } catch (e) {
+        console.error("No se pudo registrar la gestión:", e);
+    }
+}
+
+// Asegúrate de tener un campo para el DNI, por ejemplo:
+// <input type="text" id="dni" placeholder="Ingrese su DNI" />
+
+document.getElementById('btn-reiniciar').addEventListener('click', function() {
+    const dni = safeDniValue();
+    registrarGestion(dni, 'Reiniciar PC');
+    // ...tu lógica para reiniciar PC...
+});
+
+document.getElementById('btn-avaya').addEventListener('click', function() {
+    const dni = safeDniValue();
+    registrarGestion(dni, 'Error Avaya O Cti Bar');
+    // ...tu lógica para Error Avaya...
+});
+
+document.getElementById('btn-perfiles').addEventListener('click', function() {
+    const dni = safeDniValue();
+    registrarGestion(dni, 'Borrar Perfiles PC');
+    // ...tu lógica para Borrar Perfiles PC...
+});
+
+// Nuevos botones
+document.getElementById('btn-cache').addEventListener('click', function() {
+    const dni = safeDniValue();
+    registrarGestion(dni, 'Borrar Cache de Navegador');
+});
+
+document.getElementById('btn-instructivo').addEventListener('click', function() {
+    const dni = safeDniValue();
+    registrarGestion(dni, 'Instructivo VDI/Bluespace');
+});
+
+document.getElementById('btn-permisos').addEventListener('click', function() {
+    const dni = safeDniValue();
+    registrarGestion(dni, 'Actualización de Permisos');
+});
+
+document.getElementById('btn-accesos').addEventListener('click', function() {
+    const dni = safeDniValue();
+    registrarGestion(dni, 'Accesos Útiles');
+});
+
+document.getElementById('btn-simplex').addEventListener('click', function() {
+    const dni = safeDniValue();
+    registrarGestion(dni, 'Acceso Simplex');
+    window.open('http://172.20.224.149/Simplex/', '_blank');
+});
+
+document.getElementById('btn-resolucion').addEventListener('click', async function() {
+    const ancho = window.prompt('Nuevo ancho de pantalla (ej: 1920):');
+    const alto = window.prompt('Nuevo alto de pantalla (ej: 1080):');
+    if (!ancho || !alto) return;
+
+    setToolOutput(`Cambiando resolucion a ${ancho}x${alto}...`);
+    try {
+        const data = await ejecutarHerramienta('/tools/resolution', {
+            width: Number(ancho),
+            height: Number(alto),
+        });
+        setToolOutput(data.message || 'Resolucion actualizada');
+        registrarGestion(safeDniValue(), `Cambio resolucion ${ancho}x${alto}`);
+    } catch (err) {
+        setToolOutput(`Error: ${err.message}`);
+    }
+});
+
+document.getElementById('btn-logger').addEventListener('click', function() {
+    const dni = safeDniValue();
+    registrarGestion(dni, 'Repara Logger');
+});
+</script>
+
+<button id="chatbot-toggle" style="position:fixed;bottom:30px;right:30px;z-index:1000;background:#1abc9c;color:#fff;border:none;border-radius:50%;width:54px;height:54px;box-shadow:0 0 10px #000;font-size:28px;cursor:pointer;display:flex;align-items:center;justify-content:center;">💬</button>
+<div id="chatbot-container" style="position:fixed;bottom:100px;right:30px;width:320px;z-index:999;display:none;">
+    <div id="chatbot" style="background:#222;border-radius:10px;padding:10px;color:#fff;box-shadow:0 0 10px #000; width:100%; max-width:260px; font-size:14px;">
+        <div style="text-align:center; font-weight:bold; font-size:16px; margin-bottom:8px; color:#1abc9c;">Asistente Virtual</div>
+        <div style="text-align:center; font-size:12px; margin-bottom:8px; color:#fff;">¡Hola! Soy tu asistente virtual. Escribe tu consulta y te guiaré.</div>
+        <div id="chat-messages" style="height:120px;overflow-y:auto;margin-bottom:8px;font-size:13px;"></div>
+        <input type="text" id="chat-input" placeholder="Escribe tu consulta..." style="width:68%;padding:4px;border-radius:5px;border:none;font-size:13px;">
+        <button id="chat-send" style="width:28%;padding:4px;border-radius:5px;border:none;background:#1abc9c;color:#fff;font-weight:bold;font-size:13px;">Enviar</button>
+<script>
+// Mostrar/ocultar chatbot solo en estructura
+const chatbotToggle = document.getElementById('chatbot-toggle');
+const chatbotContainer = document.getElementById('chatbot-container');
+chatbotToggle.addEventListener('click', function() {
+    chatbotContainer.style.display = chatbotContainer.style.display === 'none' ? 'block' : 'none';
+});
+</script>
+<style>
+@media (max-width: 600px) {
+    #chatbot-container {
+        width: 98vw !important;
+        right: 1vw !important;
+        bottom: 70px !important;
+        min-width: 0 !important;
+    }
+    #chatbot {
+        max-width: 98vw !important;
+        min-width: 0 !important;
+        font-size: 12px !important;
+    }
+    #chat-messages {
+        height: 80px !important;
+        font-size: 11px !important;
+    }
+    #chat-input, #chat-send {
+        font-size: 11px !important;
+        padding: 3px !important;
+    }
+    #chatbot-toggle {
+        width: 44px !important;
+        height: 44px !important;
+        font-size: 22px !important;
+        bottom: 10px !important;
+        right: 10px !important;
+    }
+}
+</style>
+<style>
+@media (max-width: 600px) {
+    #chatbot-container {
+        width: 98vw !important;
+        right: 1vw !important;
+        bottom: 1vw !important;
+        min-width: 0 !important;
+    }
+    #chatbot {
+        max-width: 98vw !important;
+        min-width: 0 !important;
+        font-size: 12px !important;
+    }
+    #chat-messages {
+        height: 80px !important;
+        font-size: 11px !important;
+    }
+    #chat-input, #chat-send {
+        font-size: 11px !important;
+        padding: 3px !important;
+    }
+}
+</style>
+    </div>
+<div style="text-align:center; font-weight:bold; font-size:16px; margin-bottom:8px; color:#1abc9c;">Asistente Virtual</div>
+</div>
+
+<script>
+const respuestas = {
+    "recibo": "Para descargar tu recibo, haz clic en 'Descargar Mi Recibo'.",
+    "vacaciones": "Para ver tus vacaciones, haz clic en 'Ver Mis Vacaciones'.",
+    "mfa": "Para configurar MFA, haz clic en 'Configurar MFA' o revisa el instructivo.",
+    "pc libres": "Para ver las PC libres, haz clic en 'PC Libres'.",
+    "rrhh": "RRHH presencial atiende de Lunes a Jueves de 9 a 16.",
+    "soporte": "Para soporte llama al 0800-222-8368.",
+    "clima": "Pronto estará disponible la encuesta de clima laboral."
+};
+
+function responderChat(mensaje) {
+    mensaje = mensaje.toLowerCase();
+    for (const clave in respuestas) {
+        if (mensaje.includes(clave)) {
+            return respuestas[clave];
+        }
+    }
+    return "No entiendo tu consulta. ¿Podés reformularla o elegir una opción del menú?";
+}
+
+document.getElementById('chat-send').onclick = function() {
+    const input = document.getElementById('chat-input');
+    const mensaje = input.value.trim();
+    if (!mensaje) return;
+    const chat = document.getElementById('chat-messages');
+    chat.innerHTML += `<div style="text-align:right;"><b>Tú:</b> ${mensaje}</div>`;
+    const respuesta = responderChat(mensaje);
+    chat.innerHTML += `<div style="text-align:left;"><b>Bot:</b> ${respuesta}</div>`;
+    chat.scrollTop = chat.scrollHeight;
+    input.value = "";
+};
+
+document.getElementById('chat-input').addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') document.getElementById('chat-send').click();
+});
+
+function cerrarSesion() {
+    window.location.href = '../Interfaz Inicio/index.html';
+}
+</script>
+
+	</body>
+</html>

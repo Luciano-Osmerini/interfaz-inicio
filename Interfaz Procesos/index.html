@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Procesos - Biblioteca de Archivos</title>
+    <link rel="stylesheet" href="assets/css/main.css" />
+    <style>
+        .card {
+            background: rgba(15, 28, 40, 0.9);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 14px;
+            max-width: 1100px;
+        }
+
+        .row {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        .row input[type="text"],
+        .row input[type="file"] {
+            min-width: 230px;
+            max-width: 100%;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            min-width: 900px;
+        }
+
+        th, td {
+            padding: 10px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.15);
+            text-align: left;
+            font-size: 14px;
+            color: rgba(255, 255, 255, 0.9);
+        }
+
+        th {
+            color: rgba(255, 255, 255, 0.65);
+            font-weight: 600;
+        }
+
+        .table-wrap {
+            overflow-x: auto;
+        }
+
+        .status {
+            margin-top: 8px;
+            font-size: 14px;
+            color: rgba(255, 255, 255, 0.8);
+        }
+
+        .status.error { color: #ff6b6b; }
+        .status.ok { color: #1abc9c; }
+
+        .small {
+            font-size: 12px;
+            opacity: 0.8;
+        }
+    </style>
+</head>
+<body class="is-preload">
+    <header id="header">
+        <h1>Procesos Compartidos</h1>
+        <p>Sube documentos por gestion para que todos los usuarios autenticados los puedan consultar.</p>
+    </header>
+
+    <div class="card">
+        <div class="row" style="margin-bottom: 8px;">
+            <label for="api-url">API:</label>
+            <input type="text" id="api-url" value="http://127.0.0.1:5000" style="min-width:300px;" />
+            <button type="button" id="btn-validar" class="button">Validar sesión</button>
+            <button type="button" id="btn-refrescar" class="button">Actualizar listado</button>
+        </div>
+        <div id="status" class="status">Esperando acción...</div>
+    </div>
+
+    <div class="card">
+        <h2 style="margin-top:0;">Subir archivo</h2>
+        <div class="row">
+            <input type="text" id="gestion" placeholder="Gestión (ej: Alta de cuenta, Avaya, MFA)" />
+            <input type="text" id="descripcion" placeholder="Descripción breve (opcional)" />
+            <input type="file" id="archivo" />
+            <button type="button" id="btn-subir" class="button primary">Subir archivo</button>
+        </div>
+        <p class="small">Permitidos: pdf, doc, docx, xls, xlsx, ppt, pptx, txt, csv, png, jpg, jpeg, webp, zip.</p>
+    </div>
+
+    <div class="card">
+        <h2 style="margin-top:0;">Biblioteca de procesos</h2>
+        <div class="row" style="margin-bottom: 10px;">
+            <input type="text" id="f-gestion" placeholder="Filtrar por gestión" />
+            <button type="button" id="btn-filtrar" class="button">Filtrar</button>
+        </div>
+        <div class="table-wrap">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Fecha</th>
+                        <th>Gestión</th>
+                        <th>Archivo</th>
+                        <th>Descripción</th>
+                        <th>Subido por</th>
+                        <th>Tamaño</th>
+                        <th>Acción</th>
+                    </tr>
+                </thead>
+                <tbody id="tabla-body"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <footer id="footer">
+        <ul class="copyright">
+            <li>&copy; Designed By</li>
+            <li>Osmerini Luciano</li>
+        </ul>
+    </footer>
+
+    <script src="assets/js/main.js"></script>
+    <script>
+        function getApiUrl() {
+            return document.getElementById('api-url').value.trim().replace(/\/$/, '');
+        }
+
+        function setStatus(message, type) {
+            const el = document.getElementById('status');
+            el.textContent = message;
+            el.className = 'status' + (type ? ' ' + type : '');
+        }
+
+        function formatSize(bytes) {
+            if (!bytes && bytes !== 0) return '';
+            if (bytes < 1024) return `${bytes} B`;
+            if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+            return `${(bytes / (1024 * 1024)).toFixed(2)} MB`;
+        }
+
+        function formatDate(iso) {
+            if (!iso) return '';
+            const d = new Date(iso);
+            if (Number.isNaN(d.getTime())) return iso;
+            return d.toLocaleString();
+        }
+
+        function escapeHtml(text) {
+            return String(text || '')
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#039;');
+        }
+
+        async function validarSesion() {
+            const apiUrl = getApiUrl();
+            const res = await fetch(`${apiUrl}/auth/me`, { credentials: 'include' });
+            const data = await res.json();
+            if (!res.ok) {
+                throw new Error(data.error || 'No autenticado. Inicia sesión en la pantalla principal.');
+            }
+            setStatus(`Sesión activa: ${data.nombre} (${data.rol})`, 'ok');
+        }
+
+        async function cargarArchivos() {
+            const apiUrl = getApiUrl();
+            const gestion = document.getElementById('f-gestion').value.trim();
+            const qs = new URLSearchParams();
+            if (gestion) qs.set('gestion', gestion);
+
+            const res = await fetch(`${apiUrl}/procesos/files?${qs.toString()}`, {
+                method: 'GET',
+                credentials: 'include'
+            });
+            const data = await res.json();
+            if (!res.ok) {
+                throw new Error(data.error || 'No se pudo cargar la biblioteca.');
+            }
+
+            const body = document.getElementById('tabla-body');
+            body.innerHTML = '';
+
+            for (const item of data.items) {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td>${escapeHtml(formatDate(item.FechaSubida))}</td>
+                    <td>${escapeHtml(item.Gestion)}</td>
+                    <td>${escapeHtml(item.NombreOriginal)}</td>
+                    <td>${escapeHtml(item.Descripcion || '')}</td>
+                    <td>${escapeHtml(`${item.SubidoPorNombre || ''} (${item.SubidoPorDNI || ''})`)}</td>
+                    <td>${escapeHtml(formatSize(item.TamanioBytes))}</td>
+                    <td><button data-id="${item.Id}" class="button btn-descargar">Descargar</button></td>
+                `;
+                body.appendChild(tr);
+            }
+
+            document.querySelectorAll('.btn-descargar').forEach((btn) => {
+                btn.addEventListener('click', () => descargarArchivo(btn.dataset.id));
+            });
+
+            setStatus(`Archivos listados: ${data.items.length}`, 'ok');
+        }
+
+        async function subirArchivo() {
+            const apiUrl = getApiUrl();
+            const gestion = document.getElementById('gestion').value.trim();
+            const descripcion = document.getElementById('descripcion').value.trim();
+            const archivoInput = document.getElementById('archivo');
+            const file = archivoInput.files[0];
+
+            if (!gestion) {
+                setStatus('Debe completar la gestión.', 'error');
+                return;
+            }
+            if (!file) {
+                setStatus('Debe seleccionar un archivo.', 'error');
+                return;
+            }
+
+            const form = new FormData();
+            form.append('gestion', gestion);
+            form.append('descripcion', descripcion);
+            form.append('file', file);
+
+            setStatus('Subiendo archivo...', '');
+            const res = await fetch(`${apiUrl}/procesos/files`, {
+                method: 'POST',
+                credentials: 'include',
+                body: form
+            });
+            const data = await res.json();
+            if (!res.ok) {
+                throw new Error(data.error || 'No se pudo subir el archivo.');
+            }
+
+            document.getElementById('gestion').value = '';
+            document.getElementById('descripcion').value = '';
+            archivoInput.value = '';
+
+            setStatus('Archivo subido correctamente.', 'ok');
+            await cargarArchivos();
+        }
+
+        function descargarArchivo(id) {
+            const apiUrl = getApiUrl();
+            window.open(`${apiUrl}/procesos/files/${id}/download`, '_blank');
+        }
+
+        document.getElementById('btn-validar').addEventListener('click', async () => {
+            try {
+                await validarSesion();
+            } catch (err) {
+                setStatus(err.message, 'error');
+            }
+        });
+
+        document.getElementById('btn-refrescar').addEventListener('click', async () => {
+            try {
+                await cargarArchivos();
+            } catch (err) {
+                setStatus(err.message, 'error');
+            }
+        });
+
+        document.getElementById('btn-filtrar').addEventListener('click', async () => {
+            try {
+                await cargarArchivos();
+            } catch (err) {
+                setStatus(err.message, 'error');
+            }
+        });
+
+        document.getElementById('btn-subir').addEventListener('click', async () => {
+            try {
+                await subirArchivo();
+            } catch (err) {
+                setStatus(err.message, 'error');
+            }
+        });
+    </script>
+</body>
+</html>

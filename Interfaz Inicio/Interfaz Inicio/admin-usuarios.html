@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Gestion de Usuarios</title>
+    <style>
+        :root {
+            --bg: #0a1018;
+            --card: #132030;
+            --text: #e7f0fa;
+            --muted: #9eb5c9;
+            --accent: #1abc9c;
+            --danger: #e74c3c;
+            --line: #2a3e55;
+        }
+
+        body {
+            margin: 0;
+            font-family: Segoe UI, Tahoma, sans-serif;
+            background: radial-gradient(circle at 20% 20%, #0d3245, var(--bg) 50%);
+            color: var(--text);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1100px;
+            margin: 0 auto;
+        }
+
+        .card {
+            background: rgba(19, 32, 48, 0.92);
+            border: 1px solid var(--line);
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 16px;
+        }
+
+        h1 {
+            margin: 0 0 10px;
+            font-size: 28px;
+        }
+
+        .muted {
+            color: var(--muted);
+            margin: 0 0 12px;
+        }
+
+        .toolbar {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            flex-wrap: wrap;
+            margin-bottom: 10px;
+        }
+
+        input[type="text"],
+        input[type="date"] {
+            width: 280px;
+            max-width: 100%;
+            border: 1px solid var(--line);
+            border-radius: 8px;
+            background: #0f1b2a;
+            color: var(--text);
+            padding: 8px 10px;
+        }
+
+        button {
+            border: 0;
+            border-radius: 8px;
+            padding: 8px 12px;
+            font-weight: 600;
+            cursor: pointer;
+            color: white;
+            background: var(--accent);
+        }
+
+        button.secondary {
+            background: #3b536d;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            min-width: 760px;
+        }
+
+        th, td {
+            padding: 10px;
+            border-bottom: 1px solid var(--line);
+            text-align: left;
+            font-size: 14px;
+        }
+
+        th {
+            color: var(--muted);
+            font-weight: 600;
+        }
+
+        .table-wrap {
+            overflow-x: auto;
+        }
+
+        .status {
+            margin-top: 8px;
+            font-size: 14px;
+            color: var(--muted);
+        }
+
+        .status.error {
+            color: var(--danger);
+        }
+
+        .status.ok {
+            color: var(--accent);
+        }
+
+        select {
+            border: 1px solid var(--line);
+            border-radius: 8px;
+            background: #0f1b2a;
+            color: var(--text);
+            padding: 6px 8px;
+        }
+
+        .inline {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .section-title {
+            margin: 0 0 10px;
+            font-size: 20px;
+        }
+
+        .mono {
+            font-family: Consolas, 'Courier New', monospace;
+            font-size: 12px;
+            white-space: pre-wrap;
+            max-width: 320px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="card">
+            <h1>Gestion de usuarios</h1>
+            <p class="muted">Acceso exclusivo para Luciano Osmerini.</p>
+            <div class="toolbar">
+                <label for="api-url">API:</label>
+                <input type="text" id="api-url" value="http://127.0.0.1:5000" />
+                <button id="btn-load">Cargar usuarios</button>
+                <button class="secondary" id="btn-back" type="button">Volver</button>
+            </div>
+            <div id="status" class="status">Esperando accion...</div>
+        </div>
+
+        <div class="card table-wrap">
+            <h2 class="section-title">Usuarios</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Nombre</th>
+                        <th>Apellido</th>
+                        <th>DNI</th>
+                        <th>Rol</th>
+                        <th>Activo</th>
+                        <th>Accion</th>
+                    </tr>
+                </thead>
+                <tbody id="users-body"></tbody>
+            </table>
+        </div>
+
+        <div class="card">
+            <h2 class="section-title">Bitacora</h2>
+            <div class="toolbar">
+                <input type="date" id="f-fecha-desde" />
+                <input type="date" id="f-fecha-hasta" />
+                <input type="text" id="f-usuario" placeholder="Filtrar por DNI o nombre" />
+                <input type="text" id="f-accion" placeholder="Filtrar por accion" />
+                <button id="btn-load-bitacora" type="button">Filtrar bitacora</button>
+            </div>
+        </div>
+
+        <div class="card table-wrap">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Timestamp</th>
+                        <th>Usuario</th>
+                        <th>Accion</th>
+                        <th>Parametros</th>
+                        <th>Resultado</th>
+                        <th>Equipo</th>
+                    </tr>
+                </thead>
+                <tbody id="bitacora-body"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        function getApiUrl() {
+            return document.getElementById('api-url').value.trim().replace(/\/$/, '');
+        }
+
+        function setStatus(msg, type) {
+            const box = document.getElementById('status');
+            box.textContent = msg;
+            box.className = 'status' + (type ? ' ' + type : '');
+        }
+
+        function escapeHtml(text) {
+            return String(text)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#039;');
+        }
+
+        async function ensureSuperadminSession() {
+            const apiUrl = getApiUrl();
+            const res = await fetch(`${apiUrl}/auth/me`, {
+                method: 'GET',
+                credentials: 'include'
+            });
+
+            if (!res.ok) {
+                throw new Error('Debes iniciar sesion primero en la pantalla principal.');
+            }
+
+            const me = await res.json();
+            if (me.es_superadmin !== true) {
+                throw new Error('Acceso denegado: se requiere perfil superadmin.');
+            }
+        }
+
+        async function loadUsers() {
+            const apiUrl = getApiUrl();
+            setStatus('Validando sesion...', '');
+
+            try {
+                await ensureSuperadminSession();
+
+                const res = await fetch(`${apiUrl}/admin/users`, {
+                    method: 'GET',
+                    credentials: 'include'
+                });
+
+                const data = await res.json();
+                if (!res.ok) {
+                    throw new Error(data.error || 'No se pudo cargar el listado.');
+                }
+
+                const body = document.getElementById('users-body');
+                body.innerHTML = '';
+
+                for (const u of data.users) {
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td>${u.Id}</td>
+                        <td>${escapeHtml(u.Nombre)}</td>
+                        <td>${escapeHtml(u.Apellido)}</td>
+                        <td>${escapeHtml(u.DNI)}</td>
+                        <td>
+                            <select id="rol-${u.Id}">
+                                <option value="Administrador" ${u.Rol === 'Administrador' ? 'selected' : ''}>Administrador</option>
+                                <option value="Asesor" ${u.Rol === 'Asesor' ? 'selected' : ''}>Asesor</option>
+                                <option value="Estructura" ${u.Rol === 'Estructura' ? 'selected' : ''}>Estructura</option>
+                                <option value="Procesos" ${u.Rol === 'Procesos' ? 'selected' : ''}>Procesos</option>
+                            </select>
+                        </td>
+                        <td>
+                            <input id="activo-${u.Id}" type="checkbox" ${u.Activo ? 'checked' : ''} />
+                        </td>
+                        <td>
+                            <button data-id="${u.Id}" class="btn-save">Guardar</button>
+                        </td>
+                    `;
+                    body.appendChild(tr);
+                }
+
+                for (const btn of document.querySelectorAll('.btn-save')) {
+                    btn.addEventListener('click', () => saveUser(btn.dataset.id));
+                }
+
+                setStatus(`Usuarios cargados: ${data.users.length}`, 'ok');
+                await loadBitacora();
+            } catch (err) {
+                setStatus(err.message || 'Error de conexion con API.', 'error');
+            }
+        }
+
+        function formatDate(iso) {
+            if (!iso) return '';
+            const d = new Date(iso);
+            if (Number.isNaN(d.getTime())) return iso;
+            return d.toLocaleString();
+        }
+
+        async function loadBitacora() {
+            const apiUrl = getApiUrl();
+            await ensureSuperadminSession();
+
+            const fechaDesde = document.getElementById('f-fecha-desde').value;
+            const fechaHasta = document.getElementById('f-fecha-hasta').value;
+            const usuario = document.getElementById('f-usuario').value.trim();
+            const accion = document.getElementById('f-accion').value.trim();
+
+            const qs = new URLSearchParams();
+            if (fechaDesde) qs.set('fecha_desde', fechaDesde);
+            if (fechaHasta) qs.set('fecha_hasta', fechaHasta);
+            if (usuario) qs.set('usuario', usuario);
+            if (accion) qs.set('accion', accion);
+
+            const res = await fetch(`${apiUrl}/admin/bitacora?${qs.toString()}`, {
+                method: 'GET',
+                credentials: 'include'
+            });
+
+            const data = await res.json();
+            if (!res.ok) {
+                throw new Error(data.error || 'No se pudo cargar la bitacora.');
+            }
+
+            const body = document.getElementById('bitacora-body');
+            body.innerHTML = '';
+
+            for (const item of data.items) {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td>${escapeHtml(formatDate(item.Timestamp))}</td>
+                    <td>${escapeHtml(`${item.UsuarioNombre || ''} (${item.UsuarioDNI || ''})`)}</td>
+                    <td>${escapeHtml(item.Accion || '')}</td>
+                    <td class="mono">${escapeHtml(item.Parametros || '')}</td>
+                    <td>${escapeHtml(item.Resultado || '')}</td>
+                    <td>${escapeHtml(item.Equipo || '')}</td>
+                `;
+                body.appendChild(tr);
+            }
+
+            setStatus(`Bitacora cargada: ${data.items.length} registros`, 'ok');
+        }
+
+        async function saveUser(id) {
+            const apiUrl = getApiUrl();
+            const rol = document.getElementById(`rol-${id}`).value;
+            const activo = document.getElementById(`activo-${id}`).checked;
+
+            try {
+                const res = await fetch(`${apiUrl}/admin/users/${id}`, {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify({ rol, activo })
+                });
+
+                const data = await res.json();
+                if (!res.ok) {
+                    throw new Error(data.error || 'No se pudo actualizar el usuario.');
+                }
+
+                setStatus(`Usuario ${id} actualizado correctamente.`, 'ok');
+            } catch (err) {
+                setStatus(err.message || 'Error al guardar cambios.', 'error');
+            }
+        }
+
+        document.getElementById('btn-load').addEventListener('click', loadUsers);
+        document.getElementById('btn-load-bitacora').addEventListener('click', async () => {
+            try {
+                setStatus('Cargando bitacora...', '');
+                await loadBitacora();
+            } catch (err) {
+                setStatus(err.message || 'Error al filtrar bitacora.', 'error');
+            }
+        });
+        document.getElementById('btn-back').addEventListener('click', () => {
+            window.location.href = 'index.html';
+        });
+    </script>
+</body>
+</html>

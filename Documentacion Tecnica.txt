@@ -1,0 +1,78 @@
+1. Título de la invención
+
+“Sistema Web Inteligente para Gestión y Optimización de Soporte IT mediante Inteligencia Artificial”
+
+2. Campo de la invención
+
+La presente invención se enmarca en el campo de la tecnología de la información y la inteligencia artificial, particularmente en sistemas web que integran Python, JavaScript, HTML, CSS y SQL para brindar soporte técnico automatizado, diagnóstico de incidentes y gestión de bases de datos en entornos corporativos.
+
+3. Problema técnico a resolver
+
+En los entornos de soporte IT actuales, los incidentes suelen resolverse de forma manual, requiriendo múltiples interacciones con técnicos humanos, lo cual genera:
+
+Tiempos prolongados de respuesta.
+
+Costos elevados en horas de trabajo.
+
+Escalamiento innecesario de casos simples.
+
+Escasa trazabilidad de soluciones aplicadas.
+
+4. Estado de la técnica
+
+Existen herramientas de ticketing (ej. ServiceNow) y chatbots convencionales, pero no integran en un solo sistema web:
+
+Un motor de IA para diagnóstico predictivo.
+
+Conexión directa con bases SQL corporativas.
+
+Un entorno web multiplataforma de fácil acceso.
+La invención propuesta soluciona estas limitaciones.
+
+5. Descripción de la invención
+
+El sistema consiste en una plataforma web centralizada que:
+
+Recibe solicitudes de soporte de usuarios mediante un frontend en HTML, CSS y JS.
+
+Procesa la información en un backend desarrollado en Python.
+
+Utiliza un modelo de IA entrenado en incidentes IT para sugerir diagnósticos y soluciones.
+
+Se conecta a una base de datos SQL para registrar, actualizar y consultar incidencias.
+
+Escala automáticamente al nivel técnico correspondiente si no puede resolver el caso.
+
+Genera reportes y métricas para mejorar la toma de decisiones de infraestructura IT.
+
+6. Ejemplo de realización preferida
+
+Un usuario reporta: “No tengo acceso a la VPN”.
+
+El sistema interpreta la consulta mediante procesamiento de lenguaje natural (IA en Python).
+
+Verifica en la base SQL si existen fallas registradas en VPN.
+
+Sugiere automáticamente pasos de solución (reset de credenciales, chequeo de configuración de red).
+
+Si no se resuelve, asigna un ticket de segundo nivel a un técnico humano.
+
+7. Ventajas de la invención
+
+Reducción de hasta 40% en tiempos de resolución de incidencias.
+
+Menor carga de trabajo en niveles de soporte 1 y 2.
+
+Centralización en un único sistema web multiplataforma.
+
+Escalabilidad: puede adaptarse a distintos entornos empresariales.
+
+8. Reivindicaciones (ejemplo básico)
+
+Un sistema web para la gestión de soporte IT que integra frontend en HTML/JS/CSS, backend en Python y base de datos SQL, caracterizado por incluir un motor de inteligencia artificial entrenado para diagnosticar incidentes técnicos y proponer soluciones automáticas.
+
+El sistema según la reivindicación 1, donde la IA procesa lenguaje natural de los usuarios para interpretar incidencias.
+
+El sistema según la reivindicación 1, que permite la escalación automática de tickets según el nivel de complejidad del incidente.
+
+El sistema según cualquiera de las reivindicaciones anteriores, que genera métricas y reportes en tiempo real para la toma de decisiones en infraestructura IT.

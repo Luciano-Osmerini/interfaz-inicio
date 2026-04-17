@@ -1,0 +1,29 @@
+# Python virtual environments
+venv/
+.venv/
+*/venv/
+*/.venv/
+
+# Python cache
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.pytest_cache/
+
+# Environment files and secrets
+.env
+*.env
+!.env.example
+
+# Logs and local runtime files
+*.log
+
+# OS/editor
+.DS_Store
+Thumbs.db
+.vscode/
+
+# Uploads generated at runtime
+uploads/
+flask-sqlserver-app/uploads/

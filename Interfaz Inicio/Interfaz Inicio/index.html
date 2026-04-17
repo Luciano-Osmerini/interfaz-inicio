@@ -1,0 +1,422 @@
+<!DOCTYPE HTML>
+<html>
+    <head>
+        <title>Web App IT</title>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
+        <link rel="stylesheet" href="assets/css/main.css" />
+    </head>
+    <body class="is-preload">
+
+        <!-- Header -->
+        <header id="header">
+            <h1 style="font-size: 3.5rem; font-weight: 800; margin: 0; letter-spacing: 2px;"><strong>Web App IT</strong></h1>
+            <p>¿En qué podemos ayudarte hoy?<br />
+            <a href="https://luciano-osmerini.github.io/Proyecto/"></a></p>
+        </header>
+
+        <!-- Configuración de URL de API -->
+        <div id="api-url-container" style="max-width: 400px; margin-bottom: 8px; display:none;">
+            <input type="text" id="api-url" placeholder="URL de la API (ej: http://localhost:550)" style="width: 100%; padding: 6px; border-radius: 5px; border: 1px solid #ccc; font-size: 13px;" value="http://localhost:5000" />
+        </div>
+        <div id="auth-tabs" style="display:flex; gap:8px; max-width:560px; margin-bottom:10px;">
+            <button type="button" id="tab-login" style="padding: 8px 14px; border: 1px solid #1abc9c; background:#1abc9c; color:#fff; border-radius:5px; cursor:pointer; font-weight:700;">Iniciar sesión</button>
+            <button type="button" id="tab-signup" style="padding: 8px 14px; border: 1px solid #1abc9c; background:transparent; color:#1abc9c; border-radius:5px; cursor:pointer; font-weight:700;">Crear cuenta</button>
+        </div>
+
+        <!-- Auth Form -->
+        <form id="signup-form" method="post">
+            <div id="signup-extra-fields" style="display:none; gap:10px; align-items:center; max-width:560px; margin-bottom:10px; flex-wrap:wrap;">
+                <input type="text" name="nombre" id="nombre" placeholder="Nombre" style="flex:1; min-width:180px;" autocomplete="off" />
+                <input type="text" name="apellido" id="apellido" placeholder="Apellido" style="flex:1; min-width:180px;" autocomplete="off" />
+            </div>
+            <div style="display: flex; gap: 10px; align-items: center; max-width: 560px; margin-bottom: 10px; flex-wrap: wrap;">
+                <input type="text" name="dni" id="dni" placeholder="Ingrese Su DNI o NT" style="flex:1; min-width:180px;" autocomplete="off" />
+                <input type="password" name="password" id="password" placeholder="Ingrese su clave" style="flex:1; min-width:180px;" autocomplete="off" />
+                <input type="password" name="password-confirm" id="password-confirm" placeholder="Confirmar clave" style="flex:1; min-width:180px; display:none;" autocomplete="off" />
+                <button type="submit" id="btn-enviar" style="padding: 8px 18px; background: #1abc9c; color: #fff; border: none; border-radius: 5px; font-weight: bold; cursor: pointer;">Ingresar</button>
+            </div>
+            <a id="btn-asesores" href="https://luciano-osmerini.github.io/interfaz-asesores/">ASESORES</a>
+            <a id="btn-estructura" href="../../Interfaz Estructura/Interfaz Estructura/index.html" style="pointer-events: none; opacity: 0.5;">ESTRUCTURA</a>
+            <a id="btn-procesos" href="../../Interfaz Procesos/index.html" style="pointer-events: none; opacity: 0.5;">PROCESOS</a>
+            <a id="btn-admin-users" href="admin-usuarios.html" style="pointer-events: none; opacity: 0.5; display:none;">GESTION USUARIOS</a>
+        </form>
+        <div id="resultado"></div>
+
+        <!-- Footer -->
+        <footer id="footer">
+            <ul class="icons">
+                <li><a href="https://www.facebook.com/share/1AMnXuWURM/" target="_blank" class="icon brands fa-facebook"><span class="label">Facebook</span></a></li>
+                <li><a href="https://www.instagram.com/atentooficial?igsh=MXhlMDhyb3M2cXI5ZQ==" target="_blank" class="icon brands fa-instagram"><span class="label">Instagram</span></a></li>
+                <li><a href="https://www.linkedin.com/company/atento/posts/?feedView=all" target="_blank" class="icon brands fa-linkedin"><span class="label">Linkedin</span></a></li>
+                <li><a href="https://atento.com/es/trabaja-con-nosotros" target="_blank" class="icon fa-envelope"><span class="label">Email</span></a></li>
+            </ul>
+            <ul class="copyright">
+                <li>&copy; Designed By</li><li> <a href="https://luciano-osmerini.github.io/Proyecto/">Osmerini Luciano</a></li>
+            </ul>
+        </footer>
+
+        <!-- Scripts -->
+        <script src="assets/js/main.js"></script>
+        <script>
+        // Mostrar el campo de URL de la API con Ctrl+U
+        document.addEventListener('keydown', function(e) {
+            if (e.ctrlKey && (e.key === 'u' || e.key === 'U')) {
+                e.preventDefault();
+                const cont = document.getElementById('api-url-container');
+                cont.style.display = cont.style.display === 'none' ? 'block' : 'none';
+                if (cont.style.display === 'block') {
+                    document.getElementById('api-url').focus();
+                }
+            }
+        });
+            // Al cargar la página, deshabilita todos los botones
+            // La opción ASESORES siempre disponible
+            document.getElementById('btn-estructura').style.pointerEvents = 'none';
+            document.getElementById('btn-estructura').style.opacity = '0.5';
+            document.getElementById('btn-procesos').style.pointerEvents = 'none';
+            document.getElementById('btn-procesos').style.opacity = '0.5';
+            document.getElementById('btn-admin-users').style.pointerEvents = 'none';
+            document.getElementById('btn-admin-users').style.opacity = '0.5';
+            document.getElementById('btn-admin-users').style.display = 'none';
+
+            let caducidadTimeout = null;
+            let authMode = 'login';
+            const SESSION_TIMEOUT_MS = 30 * 60 * 1000;
+
+            // Normaliza URL para evitar problemas de hostname en algunos navegadores.
+            const apiInput = document.getElementById('api-url');
+            if (apiInput.value.includes('localhost')) {
+                apiInput.value = apiInput.value.replace('localhost', '127.0.0.1');
+            }
+
+            function setAuthMode(mode) {
+                authMode = mode;
+                const isSignup = mode === 'signup';
+
+                document.getElementById('signup-extra-fields').style.display = isSignup ? 'flex' : 'none';
+                document.getElementById('password-confirm').style.display = isSignup ? 'block' : 'none';
+                document.getElementById('btn-enviar').textContent = isSignup ? 'Crear cuenta' : 'Ingresar';
+
+                const tabLogin = document.getElementById('tab-login');
+                const tabSignup = document.getElementById('tab-signup');
+
+                if (isSignup) {
+                    tabSignup.style.background = '#1abc9c';
+                    tabSignup.style.color = '#fff';
+                    tabLogin.style.background = 'transparent';
+                    tabLogin.style.color = '#1abc9c';
+                } else {
+                    tabLogin.style.background = '#1abc9c';
+                    tabLogin.style.color = '#fff';
+                    tabSignup.style.background = 'transparent';
+                    tabSignup.style.color = '#1abc9c';
+                }
+
+                document.getElementById('resultado').innerHTML = '';
+            }
+
+            document.getElementById('tab-login').addEventListener('click', function() {
+                setAuthMode('login');
+            });
+
+            document.getElementById('tab-signup').addEventListener('click', function() {
+                setAuthMode('signup');
+            });
+
+            document.getElementById('signup-form').addEventListener('submit', async function(e) {
+                e.preventDefault();
+                const dni = document.getElementById('dni').value.trim();
+                const password = document.getElementById('password').value;
+                const passwordConfirm = document.getElementById('password-confirm').value;
+                const nombre = document.getElementById('nombre').value.trim();
+                const apellido = document.getElementById('apellido').value.trim();
+                const resultadoDiv = document.getElementById('resultado');
+                const apiUrl = document.getElementById('api-url').value.trim().replace(/\/$/, '');
+
+                if (!dni || !password) {
+                    resultadoDiv.innerHTML = '<span style="color:red;">Debe ingresar DNI y contraseña.</span>';
+                    return;
+                }
+
+                if (authMode === 'signup') {
+                    if (!nombre || !apellido) {
+                        resultadoDiv.innerHTML = '<span style="color:red;">Debe completar nombre y apellido.</span>';
+                        return;
+                    }
+
+                    if (password.length < 8) {
+                        resultadoDiv.innerHTML = '<span style="color:red;">La clave debe tener al menos 8 caracteres.</span>';
+                        return;
+                    }
+
+                    if (password !== passwordConfirm) {
+                        resultadoDiv.innerHTML = '<span style="color:red;">Las claves no coinciden.</span>';
+                        return;
+                    }
+
+                    try {
+                        const signupResponse = await fetch(`${apiUrl}/auth/signup`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            credentials: 'include',
+                            body: JSON.stringify({ nombre, apellido, dni, password })
+                        });
+
+                        const signupData = await signupResponse.json();
+                        if (!signupResponse.ok || signupData.error) {
+                            resultadoDiv.innerHTML = `<span style="color:red;">${signupData.error || 'No se pudo crear la cuenta'}</span>`;
+                            return;
+                        }
+
+                        resultadoDiv.innerHTML = `<span style="color:#1abc9c;">Cuenta creada. Ahora puedes iniciar sesión.</span>`;
+                        document.getElementById('password-confirm').value = '';
+                        setAuthMode('login');
+                        return;
+                    } catch (err) {
+                        resultadoDiv.innerHTML = `<span style="color:red;">Error al conectar con la API (${err?.message || 'red bloqueada'}). Verifica que run.py esté activo en 127.0.0.1:5000.</span>`;
+                        return;
+                    }
+                }
+
+                try {
+                    const response = await fetch(`${apiUrl}/auth/login`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        credentials: 'include',
+                        body: JSON.stringify({ dni, password })
+                    });
+
+                    const data = await response.json();
+                    if (!response.ok || data.error) {
+                        resultadoDiv.innerHTML = `<span style=\"color:red;\">${data.error || 'Credenciales inválidas'}</span>`;
+                        return;
+                    }
+
+                    const user = data.usuario;
+                    resultadoDiv.innerHTML = `
+                        <strong>Bienvenido:</strong> ${user.Nombre} ${user.Apellido}<br>
+                        <strong>Rol:</strong> ${user.Rol}<br>
+                        <strong>DNI:</strong> ${user.DNI}<br>
+                        <button onclick="cambiarClave()" style="background: #1abc9c; color: white; padding: 6px 12px; border: none; border-radius: 4px; cursor: pointer; margin-top: 8px; margin-right: 8px; font-size: 12px;">Cambiar clave</button>
+                        <button onclick="cerrarSesion()" style="background: #e74c3c; color: white; padding: 6px 12px; border: none; border-radius: 4px; cursor: pointer; margin-top: 8px; font-size: 12px;">Cerrar Sesión</button>
+                    `;
+
+                    const canAccessEstructura = user.Rol === 'Administrador' || user.Rol === 'Estructura';
+                    const canAccessProcesos = user.Rol === 'Administrador' || user.Rol === 'Procesos';
+
+                    document.getElementById('btn-estructura').style.pointerEvents = canAccessEstructura ? 'auto' : 'none';
+                    document.getElementById('btn-estructura').style.opacity = canAccessEstructura ? '1' : '0.5';
+                    document.getElementById('btn-procesos').style.pointerEvents = canAccessProcesos ? 'auto' : 'none';
+                    document.getElementById('btn-procesos').style.opacity = canAccessProcesos ? '1' : '0.5';
+
+                    if (user.Rol === 'Administrador' && user.EsSuperadmin === true) {
+                        document.getElementById('btn-admin-users').style.display = 'inline';
+                        document.getElementById('btn-admin-users').style.pointerEvents = 'auto';
+                        document.getElementById('btn-admin-users').style.opacity = '1';
+                    } else {
+                        document.getElementById('btn-admin-users').style.pointerEvents = 'none';
+                        document.getElementById('btn-admin-users').style.opacity = '0.5';
+                        document.getElementById('btn-admin-users').style.display = 'none';
+                    }
+
+                    if (caducidadTimeout) clearTimeout(caducidadTimeout);
+                    caducidadTimeout = setTimeout(() => {
+                        resultadoDiv.innerHTML = `<span style=\"color:red;\">La sesión ha caducado. Vuelva a iniciar sesión.</span>`;
+                        document.getElementById('btn-asesores').style.pointerEvents = 'none';
+                        document.getElementById('btn-asesores').style.opacity = '0.5';
+                        document.getElementById('btn-estructura').style.pointerEvents = 'none';
+                        document.getElementById('btn-estructura').style.opacity = '0.5';
+                        document.getElementById('btn-procesos').style.pointerEvents = 'none';
+                        document.getElementById('btn-procesos').style.opacity = '0.5';
+                        document.getElementById('btn-admin-users').style.pointerEvents = 'none';
+                        document.getElementById('btn-admin-users').style.opacity = '0.5';
+                        document.getElementById('btn-admin-users').style.display = 'none';
+                    }, SESSION_TIMEOUT_MS);
+                } catch (err) {
+                    resultadoDiv.innerHTML = `<span style=\"color:red;\">Error al conectar con la API (${err?.message || 'red bloqueada'}). Verifica que run.py esté activo en 127.0.0.1:5000.</span>`;
+                }
+            });
+
+            async function cerrarSesion() {
+                try {
+                    const apiUrl = document.getElementById('api-url').value.trim().replace(/\/$/, '');
+                    await fetch(`${apiUrl}/auth/logout`, {
+                        method: 'POST',
+                        credentials: 'include'
+                    });
+                } catch (e) {
+                    console.error('No se pudo cerrar sesión en API:', e);
+                }
+
+                document.getElementById('dni').value = '';
+                document.getElementById('password').value = '';
+                document.getElementById('password-confirm').value = '';
+                document.getElementById('nombre').value = '';
+                document.getElementById('apellido').value = '';
+                document.getElementById('resultado').innerHTML = '';
+                document.getElementById('btn-estructura').style.pointerEvents = 'none';
+                document.getElementById('btn-estructura').style.opacity = '0.5';
+                document.getElementById('btn-procesos').style.pointerEvents = 'none';
+                document.getElementById('btn-procesos').style.opacity = '0.5';
+                document.getElementById('btn-admin-users').style.pointerEvents = 'none';
+                document.getElementById('btn-admin-users').style.opacity = '0.5';
+                document.getElementById('btn-admin-users').style.display = 'none';
+                setAuthMode('login');
+                if (caducidadTimeout) clearTimeout(caducidadTimeout);
+            }
+
+            async function cambiarClave() {
+                const apiUrl = document.getElementById('api-url').value.trim().replace(/\/$/, '');
+                const actual = window.prompt('Ingresa tu clave actual:');
+                if (!actual) return;
+
+                const nueva = window.prompt('Ingresa tu nueva clave (minimo 8 caracteres):');
+                if (!nueva) return;
+
+                const repetir = window.prompt('Confirma tu nueva clave:');
+                if (!repetir) return;
+
+                const resultadoDiv = document.getElementById('resultado');
+
+                if (nueva.length < 8) {
+                    resultadoDiv.innerHTML = '<span style="color:red;">La nueva clave debe tener al menos 8 caracteres.</span>';
+                    return;
+                }
+
+                if (nueva !== repetir) {
+                    resultadoDiv.innerHTML = '<span style="color:red;">Las nuevas claves no coinciden.</span>';
+                    return;
+                }
+
+                try {
+                    const response = await fetch(`${apiUrl}/auth/change-password`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        credentials: 'include',
+                        body: JSON.stringify({ current_password: actual, new_password: nueva })
+                    });
+
+                    const data = await response.json();
+                    if (!response.ok || data.error) {
+                        resultadoDiv.innerHTML = `<span style="color:red;">${data.error || 'No se pudo cambiar la clave.'}</span>`;
+                        return;
+                    }
+
+                    resultadoDiv.innerHTML = '<span style="color:#1abc9c;">Clave actualizada correctamente.</span>';
+                } catch (err) {
+                    resultadoDiv.innerHTML = `<span style="color:red;">Error al conectar con la API (${err?.message || 'red bloqueada'}).</span>`;
+                }
+            }
+
+            async function registrarGestion(dni, accion) {
+                try {
+                    const apiUrl = document.getElementById('api-url').value.trim().replace(/\/$/, '');
+                    await fetch(`${apiUrl}/log_gestion`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ dni, accion })
+                    });
+                } catch (e) {
+                    // Opcional: puedes mostrar un mensaje de error si lo deseas
+                    console.error("No se pudo registrar la gestión:", e);
+                }
+            }
+
+document.getElementById('btn-asesores').addEventListener('click', function() {
+    const dni = document.getElementById('dni').value.trim();
+    registrarGestion(dni, 'Acceso a ASESORES');
+});
+document.getElementById('btn-estructura').addEventListener('click', function() {
+    const dni = document.getElementById('dni').value.trim();
+    registrarGestion(dni, 'Acceso a ESTRUCTURA');
+});
+document.getElementById('btn-procesos').addEventListener('click', function() {
+    const dni = document.getElementById('dni').value.trim();
+    registrarGestion(dni, 'Acceso a PROCESOS');
+});
+        </script>
+
+        <div id="chatbot-container" style="position:fixed; bottom:40px; right:40px; z-index:999; max-width:320px; width:100%;">
+            <div id="chatbot" style="background:#222;border-radius:10px;padding:10px;color:#fff;box-shadow:0 0 10px #000; width:100%; max-width:260px; font-size:14px; margin: 0;">
+                <div style="text-align:center; font-weight:bold; font-size:16px; margin-bottom:8px; color:#1abc9c;">Asistente Virtual</div>
+                <div style="text-align:center; font-size:12px; margin-bottom:8px; color:#fff;">¡Hola! Soy tu asistente virtual. Escribe tu consulta y te guiaré.</div>
+                <div id="chat-messages" style="height:120px;overflow-y:auto;margin-bottom:8px;font-size:13px;"></div>
+                <input type="text" id="chat-input" placeholder="Escribe tu consulta..." style="width:68%;padding:4px;border-radius:5px;border:none;font-size:13px;">
+                <button id="chat-send" style="width:28%;padding:4px;border-radius:5px;border:none;background:#1abc9c;color:#fff;font-weight:bold;font-size:13px;">Enviar</button>
+            </div>
+        <style>
+        @media (max-width: 600px) {
+            #chatbot-container {
+                width: 98vw !important;
+                right: 1vw !important;
+                bottom: 10px !important;
+                left: auto !important;
+                margin: 0 !important;
+                min-width: 0 !important;
+            }
+            #chatbot {
+                max-width: 98vw !important;
+                min-width: 0 !important;
+                font-size: 12px !important;
+            }
+            #chat-messages {
+                height: 80px !important;
+                font-size: 11px !important;
+            }
+            #chat-input, #chat-send {
+                font-size: 11px !important;
+                padding: 3px !important;
+            }
+        }
+        </style>
+        </div>
+
+        <script>
+        const respuestas = {
+            "recibo": "Para descargar tu recibo, ve a la solapa 'ASESORES' y luego selecciona 'Descargar Mi Recibo'.",
+            "recibo sueldo": "Para descargar tu recibo, ve a la solapa 'ASESORES' y luego selecciona 'Descargar Mi Recibo'.",
+            "vacaciones": "Para consultar tus vacaciones, ve a la solapa 'ASESORES' y luego selecciona 'Ver Mis Vacaciones'.",
+            "ver mis vacaciones": "Para consultar tus vacaciones, ve a la solapa 'ASESORES' y luego selecciona 'Ver Mis Vacaciones'.",
+            "reiniciar pc": "Para reiniciar tu PC, ve a la solapa 'ESTRUCTURA' y luego selecciona 'Reiniciar PC'.",
+            "reinicio": "Para reiniciar tu PC, ve a la solapa 'ESTRUCTURA' y luego selecciona 'Reiniciar PC'.",
+            "extension avaya": "Si tienes problemas con tu extensión en Avaya, ve a la solapa 'ESTRUCTURA' y luego selecciona 'Error Avaya o Cti bar'.",
+            "avaya": "Si tienes problemas con tu extensión en Avaya, ve a la solapa 'ESTRUCTURA' y luego selecciona 'Error Avaya o Cti bar'.",
+            "mfa": "Para configurar MFA, ve a la solapa 'ASESORES' y luego selecciona 'Configurar MFA'.",
+            "configurar mfa": "Para configurar MFA, ve a la solapa 'ASESORES' y luego selecciona 'Configurar MFA'.",
+            "pc libres": "Para consultar las PC libres, ve a la solapa 'ASESORES' y luego selecciona 'PC Libres'.",
+            "rrhh": "Para contactar a Recursos Humanos, ve a la solapa 'ASESORES' y luego selecciona 'RRHH presencial'.",
+            "recursos humanos": "Para contactar a Recursos Humanos, ve a la solapa 'ASESORES' y luego selecciona 'RRHH presencial'.",
+            "soporte": "Para soporte llama al 0800-222-8368.",
+            "clima": "Pronto estará disponible la encuesta de clima laboral."
+        };
+
+        function responderChat(mensaje) {
+            mensaje = mensaje.toLowerCase();
+            for (const clave in respuestas) {
+                if (mensaje.includes(clave)) {
+                    return respuestas[clave];
+                }
+            }
+            return "No entiendo tu consulta. ¿Podés reformularla o elegir una opción del menú?";
+        }
+
+        document.getElementById('chat-send').onclick = function() {
+            const input = document.getElementById('chat-input');
+            const mensaje = input.value.trim();
+            if (!mensaje) return;
+            const chat = document.getElementById('chat-messages');
+            chat.innerHTML += `<div style="text-align:right;"><b>Tú:</b> ${mensaje}</div>`;
+            const respuesta = responderChat(mensaje);
+            chat.innerHTML += `<div style="text-align:left;"><b>Bot:</b> ${respuesta}</div>`;
+            chat.scrollTop = chat.scrollHeight;
+            input.value = "";
+        };
+
+        document.getElementById('chat-input').addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') document.getElementById('chat-send').click();
+        });
+        </script>
+
+    </body>
+</html>
